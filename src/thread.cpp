@@ -26,6 +26,8 @@
 #include "util.h"
 #include "thread.h"
 
+int nMaxThreads = -1;
+
 
 
 int thrMaxAllowedParallelism,
