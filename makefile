@@ -75,10 +75,10 @@ CSCOPE = $(MIMP_SOURCE_PATH)/cscope.out
 #
 
 SOURCE = main.cpp msbg_demo.cpp gwx.c mtool.c util.c util2.cpp plot.c rand.c panel.c \
-	 readpng.c sbg.cpp thread.cpp fastmath.cpp blockpool.cpp grid.c \
-	 bitmap.c bitmap2.c pnoise.c pnoise2.cpp pnoise3.cpp halo.cpp msbg.cpp \
-	 msbg2.cpp msbg3.cpp msbg4.cpp visualizeSlices.cpp render.cpp \
-	 msbgaux.cpp mm.c mm2.c 
+         readpng.c sbg.cpp thread.cpp fastmath.cpp blockpool.cpp grid.c \
+         bitmap.c bitmap2.c pnoise.c pnoise2.cpp pnoise3.cpp halo.cpp msbg.cpp \
+         msbg2.cpp msbg3.cpp msbg4.cpp visualizeSlices.cpp render.cpp \
+         msbgaux.cpp mm.c mm2.c msbg_solver_module.cpp msbg_solver_headless.cpp
 
 HEADER = MGWin.h VEC3.h bitmap.h blockpool.h common_headers.h fastmath.h globdef.h \
 	grid.h gwx.h halo.h kernels_ispc.h log.h mm.h msbg.h msbg_demo.h msbgcell.h \
@@ -101,7 +101,7 @@ SHARED_LIB = lib$(LIBNAME).so
 	$(CC) -c $(CFLAGS) $(CFLAGS2) $(CFLAGS_BW) $(CFLAGS3) \
 	      -o $@ $<
 
-all: msbg_demo$(EXE) 
+all: msbg_demo$(EXE) msbg_solver_headless$(EXE)
 
 #test: 
 #	@echo "MIMP_ON_LINUX="$(MIMP_ON_LINUX)
@@ -131,11 +131,11 @@ endif
 # library
 #
 OBJS_MSBG_LIB = gwx.$(OBJE) mtool.$(OBJE) util.$(OBJE) util2.$(OBJE) \
-		 plot.$(OBJE) rand.$(OBJE) panel.$(OBJE) readpng.$(OBJE) sbg.$(OBJE) \
-		 thread.$(OBJE) fastmath.$(OBJE) blockpool.$(OBJE) grid.$(OBJE) bitmap.$(OBJE) bitmap2.$(OBJE) \
-		 pnoise.$(OBJE) pnoise2.$(OBJE) pnoise3.$(OBJE) halo.$(OBJE) msbg.$(OBJE) msbg2.$(OBJE) msbg3.$(OBJE) msbg4.$(OBJE) \
-		 visualizeSlices.$(OBJE) render.$(OBJE) msbgaux.$(OBJE) \
-		 mm.$(OBJE) mm2.$(OBJE) 
+                 plot.$(OBJE) rand.$(OBJE) panel.$(OBJE) readpng.$(OBJE) sbg.$(OBJE) \
+                 thread.$(OBJE) fastmath.$(OBJE) blockpool.$(OBJE) grid.$(OBJE) bitmap.$(OBJE) bitmap2.$(OBJE) \
+                 pnoise.$(OBJE) pnoise2.$(OBJE) pnoise3.$(OBJE) halo.$(OBJE) msbg.$(OBJE) msbg2.$(OBJE) msbg3.$(OBJE) msbg4.$(OBJE) \
+                 visualizeSlices.$(OBJE) render.$(OBJE) msbgaux.$(OBJE) msbg_solver_module.$(OBJE) \
+                 mm.$(OBJE) mm2.$(OBJE)
 
 $(STATIC_LIB): $(OBJS_MSBG_LIB)
 	ar rcs $@ $^
@@ -147,7 +147,8 @@ $(SHARED_LIB): $(OBJS_MSBG_LIB)
 # msbg_demo
 #
 
-OBJS_MSBG_DEMO = main.$(OBJE) msbg_demo.$(OBJE) 
+OBJS_MSBG_DEMO = main.$(OBJE) msbg_demo.$(OBJE)
+OBJS_MSBG_HEADLESS = msbg_solver_headless.$(OBJE)
 
 LD_LIBS_FOR_MSBG_DEMO = \
 	    -lpng \
@@ -160,30 +161,54 @@ ifdef MIMP_ON_LINUX
 
 msbg_demo$(EXE): $(OBJS_MSBG_DEMO) $(STATIC_LIB)
 	$(LD) $(LDFLAGS) $@ \
-	  $(OBJS_MSBG_DEMO) \
-	  -L. -l$(LIBNAME) \
-	  $(LD_LIBS_FOR_MSBG_DEMO) \
-		$(LDFLAGS_BW) \
-		$(LDFLAGS_PROF) \
-		-lgomp \
-		$(LFLAGS_MT)
+          $(OBJS_MSBG_DEMO) \
+          -L. -l$(LIBNAME) \
+          $(LD_LIBS_FOR_MSBG_DEMO) \
+                $(LDFLAGS_BW) \
+                $(LDFLAGS_PROF) \
+                -lgomp \
+                $(LFLAGS_MT)
+
+msbg_solver_headless$(EXE): $(OBJS_MSBG_HEADLESS) $(STATIC_LIB)
+	$(LD) $(LDFLAGS) $@ \
+          $(OBJS_MSBG_HEADLESS) \
+          -L. -l$(LIBNAME) \
+          $(LD_LIBS_FOR_MSBG_DEMO) \
+          $(LDFLAGS_BW) \
+          $(LDFLAGS_PROF) \
+          -lgomp \
+          $(LFLAGS_MT)
 else
-# 
+#
 # native windows application via MSYS2/MinGw64
 #
 msbg_demo$(EXE): $(OBJS_MSBG_DEMO) $(STATIC_LIB)
 	$(LD) $(LDFLAGS) $@ \
-	  -static-libgcc -static-libstdc++ \
-	  $(OBJS_MSBG_DEMO) \
-	  -L. -l$(LIBNAME) \
-	  $(LD_LIBS_FOR_MSBG_DEMO) \
-	  $(LDFLAGS_BW) \
-	  $(LDFLAGS_PROF) \
-	  -lgomp \
-	  -lwinmm \
-	  -Wl,--enable-auto-import \
-	  -Wl,--subsystem,console -mwindows \
-	  $(LFLAGS_MT)
+          -static-libgcc -static-libstdc++ \
+          $(OBJS_MSBG_DEMO) \
+          -L. -l$(LIBNAME) \
+          $(LD_LIBS_FOR_MSBG_DEMO) \
+          $(LDFLAGS_BW) \
+          $(LDFLAGS_PROF) \
+          -lgomp \
+          -lwinmm \
+          -Wl,--enable-auto-import \
+          -Wl,--subsystem,console -mwindows \
+          $(LFLAGS_MT)
+
+msbg_solver_headless$(EXE): $(OBJS_MSBG_HEADLESS) $(STATIC_LIB)
+	$(LD) $(LDFLAGS) $@ \
+          -static-libgcc -static-libstdc++ \
+          $(OBJS_MSBG_HEADLESS) \
+          -L. -l$(LIBNAME) \
+          $(LD_LIBS_FOR_MSBG_DEMO) \
+          $(LDFLAGS_BW) \
+          $(LDFLAGS_PROF) \
+          -lgomp \
+          -lwinmm \
+          -Wl,--enable-auto-import \
+          -Wl,--subsystem,console -mwindows \
+          $(LFLAGS_MT)
 endif
 
 
@@ -192,11 +217,12 @@ endif
 # clean
 #
 OBJS_ALL = $(OBJS_MIMP) $(OBJS_TSTMKL) $(OBJS_TSTENV) \
-	   $(OBJS_ISPC) $(OBJS_MSBG_DEMO)
+           $(OBJS_ISPC) $(OBJS_MSBG_DEMO) $(OBJS_MSBG_HEADLESS)
 
 clean:
 	rm $(OBJS_ALL)
 	rm msbg_demo$(EXE)
+	rm msbg_solver_headless$(EXE)
 
 gtags_files:
 	@rm -f $(MIMP_SOURCE_PATH)/gtags.files
